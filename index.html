@@ -11,7 +11,10 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c130f;--card:#15201a;--tx:#e8f0ea;--mu:#8fa398;--bd:#26372d;--ac:#3fbf6a;--ac-t:#06210f;--lock:#173324;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#0c130f;--card:#15201a;--tx:#e8f0ea;--mu:#8fa398;--bd:#26372d;--ac:#3fbf6a;--ac-t:#06210f;--lock:#173324;color-scheme:dark}
 *,*::before,*::after{box-sizing:inherit}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+#scrollProgress{position:fixed;z-index:1000;top:0;left:0;width:0;height:4px;background:linear-gradient(90deg,#f2c230,#64d98a);box-shadow:0 0 12px rgba(242,194,48,.55);pointer-events:none;transition:width .08s linear}
+@media (prefers-reduced-motion:no-preference){.reveal{opacity:0;transform:translateY(22px);transition:opacity .65s ease,transform .65s cubic-bezier(.2,.7,.2,1)}.reveal.visible{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal{opacity:1;transform:none}}
 body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 main{max-width:980px;margin:0 auto;padding:20px 16px 40px}
 h1{font:700 28px/1.1 Oswald,"Arial Narrow",Impact,sans-serif;margin:0 0 4px;letter-spacing:.01em}
@@ -105,6 +108,7 @@ input.sc::-webkit-inner-spin-button,input.sc::-webkit-outer-spin-button{-webkit-
 </style>
 </head>
 <body>
+<div id="scrollProgress" aria-hidden="true"></div>
 <main>
   <h1>Жеребьёвка команд <span aria-hidden="true">⚽</span></h1>
   <noscript><p class="note"><b>Скрипты отключены.</b> Эту страницу нужно открыть в браузере (Safari или Chrome) по обычной ссылке, а не в просмотрщике файлов Telegram.</p></noscript>
@@ -129,7 +133,7 @@ input.sc::-webkit-inner-spin-button,input.sc::-webkit-outer-spin-button{-webkit-
     <button id="copy">Скопировать итог</button>
     <button id="reset">Начать заново</button>
   </div>
-  <p class="note" id="msg"></p>
+  <p class="note" id="msg">Изменения сохраняются автоматически на этом устройстве.</p>
   <p class="note">Уровень команд указан примерно, по общему классу клуба. Команда, которую один игрок оставил себе, другим не выпадет.</p>
 </main>
 
@@ -147,7 +151,12 @@ function load(){
   try{var r=localStorage.getItem(KEY);if(r){var s=JSON.parse(r);if(s&&s.p&&s.p.length===NAMES.length){s.p.forEach(function(q){if(!q.h)q.h=q.team?[q.team]:[]});return s}}}catch(e){}
   return {p:NAMES.map(function(n){return{n:n,spins:0,team:null,locked:false,h:[]}}),cur:0};
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));var m=$("msg");if(m)m.textContent="✓ Изменения сохранены автоматически на этом устройстве."}catch(e){var m=$("msg");if(m)m.textContent="Не удалось сохранить данные браузером. Проверь настройки хранения сайта."}}
+window.addEventListener("pagehide",save);
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")save()});
+function updateScrollProgress(){var d=document.documentElement,max=d.scrollHeight-d.clientHeight;$("scrollProgress").style.width=(max>0?Math.min(100,d.scrollTop/max*100):0)+"%"}
+window.addEventListener("scroll",updateScrollProgress,{passive:true});window.addEventListener("resize",updateScrollProgress);
+function initScrollEffects(){var items=document.querySelectorAll("main>h1,main>.sub,main>.stage,main>h2,main>#list,main>#tour,main>.tools,main>.note,#tbody .grp,#tbody .sched,#tbody .ko");if(!( "IntersectionObserver" in window)||matchMedia("(prefers-reduced-motion: reduce)").matches)return;var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add("visible");observer.unobserve(entry.target)}})},{threshold:.08,rootMargin:"0px 0px -35px 0px"});items.forEach(function(item){if(!item.classList.contains("reveal")){item.classList.add("reveal");observer.observe(item)}})}
 function rnd(n){var a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}
 function stars(v){var s="★".repeat(Math.floor(v));return v%1?s+"½":s}
 function level(name){for(var i=0;i<TEAMS.length;i++)if(TEAMS[i][0]===name)return TEAMS[i][1];return 0}
@@ -177,6 +186,8 @@ function render(){
   var all=S.p.every(function(q){return q.locked});
   if(all){$("who").textContent="Все команды розданы";$("spin").disabled=true}
   tourState(all);
+  initScrollEffects();
+  updateScrollProgress();
   var L=$("list");L.innerHTML="";
   S.p.forEach(function(q,i){
     var b=document.createElement("button");
@@ -396,6 +407,8 @@ $("reset").onclick=function(){
   S={p:NAMES.map(function(n){return{n:n,spins:0,team:null,locked:false,h:[]}}),cur:0};save();$("msg").textContent="";render();
 };
 render();
+initScrollEffects();
+updateScrollProgress();
 </script>
 </body>
 </html>
