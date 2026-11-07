@@ -407,7 +407,7 @@ function render(){
 
 
 function rosterNeedsConfirm(){
-  return !!(S.t&&(Object.keys(S.t.res||{}).length||Object.keys(S.t.pen||{}).length));
+  return !!S.t;
 }
 function resetTournamentForRosterChange(){
   S.t=null;built=false;M={};
