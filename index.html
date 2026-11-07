@@ -270,6 +270,25 @@ td .club-line>span:last-child{white-space:normal}
 .roster-delete:disabled{opacity:.3}
 @media(max-width:520px){.roster-add{flex-direction:column}.roster-add button{width:100%}.roster-row{gap:5px}.roster-row button{padding:6px 8px}}
 
+
+/* MATCHDAY DASHBOARD + QUICK NAV */
+.quick-nav{position:sticky;top:8px;z-index:30;display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:0 0 16px;padding:8px;border:1px solid rgba(142,166,194,.2);border-radius:16px;background:rgba(8,17,29,.88);backdrop-filter:blur(16px);box-shadow:0 12px 32px rgba(0,0,0,.22)}
+.quick-nav a{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:10px;color:#dce8f5;text-decoration:none;font-size:13px;font-weight:750;transition:background .2s,color .2s}
+.quick-nav a:hover,.quick-nav a:focus-visible{background:rgba(183,243,75,.12);color:#d7ff91;outline:none}
+.matchday-dashboard{margin:0 0 24px;padding:16px 19px;border:1px solid rgba(183,243,75,.2);border-radius:18px;background:linear-gradient(115deg,rgba(16,31,48,.96),rgba(13,38,38,.92));box-shadow:0 14px 34px rgba(0,0,0,.18)}
+.dashboard-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.dashboard-live{display:flex;align-items:center;gap:8px;color:#c6d5e5;font-size:10px;font-weight:900;letter-spacing:.16em}
+.dashboard-live i{width:8px;height:8px;border-radius:50%;background:#b7f34b;box-shadow:0 0 12px #b7f34b}
+.dashboard-phase{color:#d7f6a9;font-size:10px;font-weight:850;letter-spacing:.1em}
+.dashboard-stats{display:flex;gap:clamp(25px,8vw,90px);margin:13px 0}
+.dashboard-stats div{display:flex;flex-direction:column;gap:2px}
+.dashboard-stats strong{font:800 clamp(23px,5vw,30px)/1.1 Oswald,system-ui,sans-serif;color:#f4f8ff}
+.dashboard-stats span{color:#91a5bb;font-size:9px;font-weight:850;letter-spacing:.12em}
+.dashboard-track{height:5px;overflow:hidden;border-radius:99px;background:#26374a}
+.dashboard-track span{display:block;width:0;height:100%;border-radius:99px;background:linear-gradient(90deg,#8dcf37,#d7ff82);box-shadow:0 0 12px rgba(183,243,75,.45);transition:width .45s ease}
+#drawStage,#rosterPanel,#tour{scroll-margin-top:90px}
+@media(max-width:520px){.quick-nav{top:4px;justify-content:space-around;gap:2px;padding:5px}.quick-nav a{padding:9px 7px;font-size:11px}.dashboard-stats{gap:30px}.matchday-dashboard{padding:14px}}
+
 </style>
 </head>
 <body>
@@ -291,10 +310,18 @@ td .club-line>span:last-child{white-space:normal}
     </div>
     <div class="hero-trophy" aria-hidden="true"><span>🏆</span><i></i></div>
   </section>
+  <nav class="quick-nav" aria-label="Быстрая навигация">
+    <a href="#drawStage">⚽ Жеребьёвка</a><a href="#rosterPanel">👥 Участники</a><a href="#tour">🏆 Турнир</a>
+  </nav>
+  <section class="matchday-dashboard" aria-label="Прогресс турнира">
+    <div class="dashboard-top"><span class="dashboard-live"><i></i> LIVE TOURNAMENT</span><span class="dashboard-phase" id="dashboardPhase">ПОДГОТОВКА</span></div>
+    <div class="dashboard-stats"><div><strong id="dashboardPlayers">0/9</strong><span>КОМАНДЫ ВЫБРАНЫ</span></div><div><strong id="dashboardMatches">0/27</strong><span>МАТЧЕЙ СЫГРАНО</span></div></div>
+    <div class="dashboard-track"><span id="dashboardProgress"></span></div>
+  </section>
   <noscript><p class="note"><b>Скрипты отключены.</b> Эту страницу нужно открыть в браузере (Safari или Chrome) по обычной ссылке, а не в просмотрщике файлов Telegram.</p></noscript>
   <p class="sub">Турнир по FIFA: у каждого игрока три прокрутки, а потом он оставляет лучшую из выпавших команд.</p>
 
-  <section class="stage" aria-live="polite">
+  <section class="stage" id="drawStage" aria-live="polite">
     <div class="who"><span id="who"></span><span class="dots" id="dots" aria-label="Использовано прокруток"></span></div>
     <div class="board"><div class="team idle" id="team"></div><div class="stars" id="stars"></div></div>
     <div class="act">
@@ -363,6 +390,17 @@ function clubBadge(name,big){
 }
 function clubLine(name,big){return '<span class="club-line">'+clubBadge(name,big)+'<span>'+esc(name)+'</span></span>'}
 
+function updateDashboard(){
+  var selected=S.p.filter(function(q){return q.locked}).length;
+  var countA=Math.ceil(S.p.length/2),countB=S.p.length-countA;
+  var groupTotal=S.t?pairs(S.t.A).length+pairs(S.t.B).length:countA*(countA-1)/2+countB*(countB-1)/2;
+  var played=S.t?Object.keys(S.t.res||{}).length:0,total=groupTotal+7;
+  var phase=selected<S.p.length?"РАЗДАЧА КОМАНД":!S.t?"ГОТОВО К ЖЕРЕБЬЁВКЕ":groupDone("A")&&groupDone("B")?"ПЛЕЙ-ОФФ":"ГРУППОВОЙ ЭТАП";
+  $("dashboardPlayers").textContent=selected+"/"+S.p.length;
+  $("dashboardMatches").textContent=played+"/"+total;
+  $("dashboardPhase").textContent=phase;
+  $("dashboardProgress").style.width=Math.min(100,selected/S.p.length*100)+"%";
+}
 function render(){
   renderRoster();
   var p=cur(), t=$("team");
@@ -388,6 +426,7 @@ function render(){
   var all=S.p.every(function(q){return q.locked});
   if(all){$("who").textContent="Все команды розданы";$("spin").disabled=true}
   tourState(all);
+  updateDashboard();
   initScrollEffects();
   updateScrollProgress();
   var L=$("list");L.innerHTML="";
@@ -599,7 +638,7 @@ function win(k,a,b){
 }
 function renderTable(g,arr){
   var h='<table><thead><tr><th>#</th><th>Игрок</th><th>И</th><th>В</th><th>Н</th><th>П</th><th>Мячи</th><th>О</th><th>О/И</th></tr></thead><tbody>';
-  arr.forEach(function(r,k){h+='<tr'+(k<3?' class=adv':'')+'><td>'+(k+1)+'</td><td>'+lab(r.i)+'</td><td>'+r.pl+'</td><td>'+r.w+'</td><td>'+r.d+'</td><td>'+r.l+'</td><td>'+r.gf+':'+r.ga+'</td><td><b>'+r.pts+'</b></td><td>'+(r.pl?(r.pts/r.pl).toFixed(2):'0.00')+'</td></tr>'});
+  arr.forEach(function(r,k){h+='<tr'+(k<4?' class=adv':'')+'><td>'+(k+1)+'</td><td>'+lab(r.i)+'</td><td>'+r.pl+'</td><td>'+r.w+'</td><td>'+r.d+'</td><td>'+r.l+'</td><td>'+r.gf+':'+r.ga+'</td><td><b>'+r.pts+'</b></td><td>'+(r.pl?(r.pts/r.pl).toFixed(2):'0.00')+'</td></tr>'});
   $('st'+g).innerHTML=h+'</tbody></table>';
 }
 function setKo(k,pp){
@@ -617,7 +656,7 @@ function setKo(k,pp){
   }
 }
 function refresh(){
-  if(!S.t||!M.champ)return;
+  if(!S.t||!M.champ){updateDashboard();return;}
   var st={A:standings('A'),B:standings('B')};
   renderTable('A',st.A);renderTable('B',st.B);
   var ready=groupDone('A')&&groupDone('B');
@@ -658,6 +697,7 @@ $("reset").onclick=function(){
 function startCinematicIntro(){
   var screen=$("introScreen"),skip=$("introSkip");
   if(!screen)return;
+  try{if(sessionStorage.getItem("rublevka-intro-seen")==="1"){screen.parentNode.removeChild(screen);return}sessionStorage.setItem("rublevka-intro-seen","1")}catch(e){}
   var close=function(){screen.classList.add("hide");setTimeout(function(){if(screen.parentNode)screen.parentNode.removeChild(screen)},900)};
   if(skip)skip.onclick=close;
   document.addEventListener("keydown",function(e){if(e.key==="Escape")close()},{once:true});
