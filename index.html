@@ -249,6 +249,27 @@ td .club-line>span:last-child{white-space:normal}
 @media(max-width:600px){.cup-hero{min-height:190px;padding:23px 18px;border-radius:21px}.hero-kicker{font-size:8px;letter-spacing:.14em}.cup-hero h1{font-size:clamp(38px,10vw,58px)}.hero-season{font-size:9px;letter-spacing:.16em}.hero-tagline{font-size:8px;letter-spacing:.13em}.hero-trophy{width:88px}.hero-trophy span{font-size:58px}}
 @media(prefers-reduced-motion:reduce){.intro-screen,.intro-screen:before,.intro-screen:after,.intro-trophy,.intro-title,.intro-overline,.intro-sub,.hero-trophy span,.live-dot{animation:none!important}.intro-screen{transition:none}}
 
+
+/* PLAYER ROSTER MANAGEMENT */
+.roster-panel{margin:28px 0 34px;padding:clamp(17px,3vw,26px);border:1px solid rgba(128,151,178,.2);border-radius:22px;background:linear-gradient(145deg,rgba(17,31,48,.92),rgba(9,19,32,.9));box-shadow:0 18px 45px rgba(0,0,0,.2)}
+.roster-heading{display:flex;align-items:end;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.roster-heading h2{margin:5px 0 0}
+.roster-kicker{color:#b7f34b;font-size:10px;font-weight:850;letter-spacing:.2em}
+.roster-count{padding:7px 10px;border:1px solid rgba(183,243,75,.25);border-radius:999px;color:#d7f6a9;background:rgba(183,243,75,.07);font-size:10px;font-weight:850;letter-spacing:.12em}
+.roster-add{display:flex;gap:9px;margin:17px 0;flex-wrap:wrap}
+.roster-add input,.roster-row input{min-width:0;flex:1;min-height:44px;padding:10px 13px;border:1px solid #344a63;border-radius:11px;background:#091524;color:#f2f6fc;font:inherit}
+.roster-add input:focus,.roster-row input:focus{outline:2px solid #b7f34b;outline-offset:2px}
+.roster-add-btn{background:linear-gradient(135deg,#d8ff80,#a9e63e);border:0;color:#142006;font-weight:900}
+.roster-editor{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:8px}
+.roster-row{display:flex;align-items:center;gap:7px;padding:8px;border:1px solid rgba(128,151,178,.16);border-radius:13px;background:rgba(255,255,255,.025)}
+.roster-index{flex:0 0 25px;color:#8fa3b8;font-size:11px;font-weight:800;text-align:center}
+.roster-row input{min-height:39px;padding:7px 10px;font-size:13px}
+.roster-row button{min-height:38px;padding:7px 10px;font-size:12px;box-shadow:none}
+.roster-save{border-color:rgba(183,243,75,.28);color:#d7f6a9}
+.roster-delete{border-color:rgba(255,120,120,.25);color:#ffaaaa}
+.roster-delete:disabled{opacity:.3}
+@media(max-width:520px){.roster-add{flex-direction:column}.roster-add button{width:100%}.roster-row{gap:5px}.roster-row button{padding:6px 8px}}
+
 </style>
 </head>
 <body>
@@ -283,6 +304,12 @@ td .club-line>span:last-child{white-space:normal}
     <div class="pick" id="pick"></div>
   </section>
 
+  <section class="roster-panel" id="rosterPanel">
+    <div class="roster-heading"><div><span class="roster-kicker">SQUAD MANAGEMENT</span><h2>Участники турнира</h2></div><span class="roster-count" id="rosterCount">9 PLAYERS</span></div>
+    <p class="note">Добавляй новых игроков, меняй имена или удаляй тех, кто не сможет прийти. Минимум 8 участников для сетки плей-офф.</p>
+    <form class="roster-add" id="rosterAdd"><input id="newPlayerName" type="text" maxlength="32" placeholder="Имя нового участника" autocomplete="off" aria-label="Имя нового участника"><button class="roster-add-btn" type="submit">＋ Добавить игрока</button></form>
+    <div class="roster-editor" id="rosterEditor"></div>
+  </section>
   <h2>Игроки и команды</h2>
   <div class="list" id="list"></div>
 
@@ -315,7 +342,7 @@ var KEY="fifa-draw-v1", MAX=3, S=load(), busy=false, resetArmed=false;
 var $=function(i){return document.getElementById(i)};
 
 function load(){
-  try{var r=localStorage.getItem(KEY);if(r){var s=JSON.parse(r);if(s&&s.p&&s.p.length===NAMES.length){s.p.forEach(function(q){if(!q.h)q.h=q.team?[q.team]:[]});return s}}}catch(e){}
+  try{var r=localStorage.getItem(KEY);if(r){var s=JSON.parse(r);if(s&&Array.isArray(s.p)&&s.p.length>=8&&s.p.length<=20){s.p.forEach(function(q){if(!q.h)q.h=q.team?[q.team]:[];if(typeof q.n!=="string")q.n="Игрок"});if(typeof s.cur!=="number"||s.cur<0||s.cur>=s.p.length)s.cur=0;return s}}}catch(e){}
   return {p:NAMES.map(function(n){return{n:n,spins:0,team:null,locked:false,h:[]}}),cur:0};
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));var m=$("msg");if(m)m.textContent="✓ Изменения сохранены автоматически на этом устройстве."}catch(e){var m=$("msg");if(m)m.textContent="Не удалось сохранить данные браузером. Проверь настройки хранения сайта."}}
@@ -337,6 +364,7 @@ function clubBadge(name,big){
 function clubLine(name,big){return '<span class="club-line">'+clubBadge(name,big)+'<span>'+esc(name)+'</span></span>'}
 
 function render(){
+  renderRoster();
   var p=cur(), t=$("team");
   $("who").textContent=p.n;
   $("dots").innerHTML="";
@@ -376,6 +404,52 @@ function render(){
     L.appendChild(b);
   });
 }
+
+
+function rosterNeedsConfirm(){
+  return !!(S.t&&(Object.keys(S.t.res||{}).length||Object.keys(S.t.pen||{}).length));
+}
+function resetTournamentForRosterChange(){
+  S.t=null;built=false;M={};
+  var body=$("tbody");if(body)body.innerHTML='<p class="note">Состав изменился. Когда все участники выберут команды, жеребьёвка групп начнётся заново.</p>';
+}
+function renderRoster(){
+  var host=$("rosterEditor");if(!host)return;
+  $("rosterCount").textContent=S.p.length+" PLAYERS";
+  host.innerHTML="";
+  S.p.forEach(function(p,i){
+    var row=el("div","roster-row"),idx=el("span","roster-index",String(i+1).padStart(2,"0")),field=el("input");
+    field.type="text";field.maxLength=32;field.value=p.n;field.setAttribute("aria-label","Имя участника "+(i+1));
+    var saveBtn=el("button","roster-save","Сохранить");
+    saveBtn.type="button";saveBtn.onclick=function(){
+      var name=field.value.trim();
+      if(!name){field.focus();return}
+      if(S.p.some(function(q,j){return j!==i&&q.n.toLocaleLowerCase()===name.toLocaleLowerCase()})){alert("Игрок с таким именем уже есть.");return}
+      if(name===p.n)return;
+      if(rosterNeedsConfirm()&&!confirm("Изменение состава сбросит группы и результаты матчей. Команды игроков сохранятся. Продолжить?")){field.value=p.n;return}
+      p.n=name;resetTournamentForRosterChange();save();render();
+    };
+    var del=el("button","roster-delete","Удалить");del.type="button";del.disabled=S.p.length<=8;
+    del.title=S.p.length<=8?"Для сетки плей-офф нужно минимум 8 участников":"Удалить участника";
+    del.onclick=function(){
+      if(S.p.length<=8){alert("Нужно оставить минимум 8 участников для четвертьфинальной сетки.");return}
+      if(!confirm("Удалить игрока «"+p.n+"»? Его команда освободится. Группы и результаты матчей будут сброшены."))return;
+      S.p.splice(i,1);if(S.cur>=S.p.length)S.cur=S.p.length-1;else if(S.cur>i)S.cur--;
+      resetTournamentForRosterChange();save();render();
+    };
+    row.appendChild(idx);row.appendChild(field);row.appendChild(saveBtn);row.appendChild(del);host.appendChild(row);
+  });
+}
+$("rosterAdd").onsubmit=function(e){
+  e.preventDefault();
+  var field=$("newPlayerName"),name=field.value.trim();
+  if(!name){field.focus();return}
+  if(S.p.length>=20){alert("Максимум — 20 участников.");return}
+  if(S.p.some(function(q){return q.n.toLocaleLowerCase()===name.toLocaleLowerCase()})){alert("Игрок с таким именем уже есть.");return}
+  if(rosterNeedsConfirm()&&!confirm("Добавление игрока сбросит группы и результаты матчей. Команды текущих игроков сохранятся. Продолжить?"))return;
+  S.p.push({n:name,spins:0,team:null,locked:false,h:[]});
+  resetTournamentForRosterChange();field.value="";S.cur=S.p.length-1;save();render();
+};
 
 function spin(){
   var p=cur();
@@ -425,8 +499,8 @@ function tourState(all){
 function split(){
   var ids=S.p.map(function(_,i){return i});
   for(var i=ids.length-1;i>0;i--){var j=rnd(i+1),x=ids[i];ids[i]=ids[j];ids[j]=x}
-  var num=function(a,b){return a-b};
-  S.t={A:ids.slice(0,5).sort(num),B:ids.slice(5).sort(num),res:{},pen:{},kp:{}};
+  var num=function(a,b){return a-b},cut=Math.ceil(ids.length/2);
+  S.t={A:ids.slice(0,cut).sort(num),B:ids.slice(cut).sort(num),res:{},pen:{},kp:{}};
   save();buildT();
 }
 function mkMatch(key,ko){
@@ -451,7 +525,7 @@ function onScore(key,o){
 }
 function buildT(){
   var root=$('tbody');root.innerHTML='';M={};built=true;
-  root.appendChild(el('p','note','Формат: две группы (5 и 4 игрока), каждый играет с каждым по одному матчу. Победа даёт 3 очка, ничья 1. Четверо лучших из каждой группы (подсвечены) выходят в четвертьфинал, остальные выбывают. Все 8 участников играют четвертьфиналы крест-накрест, затем полуфиналы и финал. Места в группе считаются по очкам, затем по разнице мячей, затем по забитым.'));
+  root.appendChild(el('p','note','Формат: две группы, состав делится максимально поровну. Каждый играет с каждым по одному матчу. Победа даёт 3 очка, ничья 1. Четверо лучших из каждой группы (подсвечены) выходят в четвертьфинал. Все 8 участников играют четвертьфиналы, затем полуфиналы и финал. Места считаются по очкам, разнице мячей и забитым голам.'));
   if(!S.t){var b=el('button','go','Разделить на группы');b.onclick=split;root.appendChild(b);return}
   var gw=el('div','groups');
   ['A','B'].forEach(function(g){
@@ -565,10 +639,10 @@ function refresh(){
   M.places.innerHTML=pl;
   var oh='';
   if(ready){
-    var out=st.A.slice(3).concat(st.B.slice(3));
+    var out=st.A.slice(4).concat(st.B.slice(4));
     out.sort(function(x,y){return y.pts/y.pl-x.pts/x.pl||(y.gf-y.ga)/y.pl-(x.gf-x.ga)/x.pl||y.gf/y.pl-x.gf/x.pl||x.i-y.i});
-    oh='<h3>Выбывшие в группах: места 7–9</h3><p class=note>Считаются по среднему числу очков за матч (в группе из 5 игроков сыграно на матч больше), затем по средней разнице мячей. Места 3–6 делят проигравшие в плей-офф.</p><div class=tw><table><thead><tr><th>Место</th><th>Игрок</th><th>И</th><th>О</th><th>О/И</th><th>Мячи</th></tr></thead><tbody>';
-    out.forEach(function(r,k){oh+='<tr><td>'+(7+k)+'</td><td>'+lab(r.i)+'</td><td>'+r.pl+'</td><td>'+r.pts+'</td><td><b>'+(r.pts/r.pl).toFixed(2)+'</b></td><td>'+r.gf+':'+r.ga+'</td></tr>'});
+    oh='<h3>Выбывшие на групповом этапе</h3><p class=note>Сортировка по среднему числу очков за матч, затем по средней разнице мячей. Проигравшие в четвертьфиналах занимают следующие места.</p><div class=tw><table><thead><tr><th>Место</th><th>Игрок</th><th>И</th><th>О</th><th>О/И</th><th>Мячи</th></tr></thead><tbody>';
+    out.forEach(function(r,k){oh+='<tr><td>'+(5+k)+'</td><td>'+lab(r.i)+'</td><td>'+r.pl+'</td><td>'+r.pts+'</td><td><b>'+(r.pts/r.pl).toFixed(2)+'</b></td><td>'+r.gf+':'+r.ga+'</td></tr>'});
     oh+='</tbody></table></div>';
   }
   M.out.innerHTML=oh;
