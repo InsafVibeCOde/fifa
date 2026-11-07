@@ -266,7 +266,7 @@ function onScore(key,o){
 }
 function buildT(){
   var root=$('tbody');root.innerHTML='';M={};built=true;
-  root.appendChild(el('p','note','Формат: две группы (5 и 4 игрока), каждый играет с каждым по одному матчу. Победа даёт 3 очка, ничья 1. Трое лучших из каждой группы (подсвечены) выходят в плей-офф, остальные выбывают. Первые места групп сразу попадают в полуфинал, а 2 и 3 места играют четвертьфиналы крест-накрест. Победители полуфиналов играют финал. Места в группе считаются по очкам, затем по разнице мячей, затем по забитым.'));
+  root.appendChild(el('p','note','Формат: две группы (5 и 4 игрока), каждый играет с каждым по одному матчу. Победа даёт 3 очка, ничья 1. Четверо лучших из каждой группы (подсвечены) выходят в четвертьфинал, остальные выбывают. Все 8 участников играют четвертьфиналы крест-накрест, затем полуфиналы и финал. Места в группе считаются по очкам, затем по разнице мячей, затем по забитым.'));
   if(!S.t){var b=el('button','go','Разделить на группы');b.onclick=split;root.appendChild(b);return}
   var gw=el('div','groups');
   ['A','B'].forEach(function(g){
@@ -287,14 +287,14 @@ function buildT(){
   sc.appendChild(sl);root.insertBefore(sc,gw);
   var ko=el('div','ko'),c0=el('div','col'),c1=el('div','col'),c2=el('div','col'),c3=el('div','col');
   function card(c,k,t){var w=el('div','card');w.appendChild(el('small','',t));w.appendChild(mkMatch(k,true).box);c.appendChild(w)}
-  c0.appendChild(el('h3','','Четвертьфиналы'));card(c0,'qf1','2 место A и 3 место B');card(c0,'qf2','2 место B и 3 место A');
+  c0.appendChild(el('h3','','Четвертьфиналы'));card(c0,'qf1','1 место A и 4 место B');card(c0,'qf2','2 место B и 3 место A');card(c0,'qf3','1 место B и 4 место A');card(c0,'qf4','2 место A и 3 место B');
   c1.appendChild(el('h3','','Полуфиналы'));
-  card(c1,'sf1','1 место A и победитель матча 2 B — 3 A');card(c1,'sf2','1 место B и победитель матча 2 A — 3 B');
+  card(c1,'sf1','Победитель четвертьфинала 1 и победитель четвертьфинала 2');card(c1,'sf2','Победитель четвертьфинала 3 и победитель четвертьфинала 4');
   c2.appendChild(el('h3','','Финал'));
   var fw=el('div','card');fw.appendChild(mkMatch('f',true).box);c2.appendChild(fw);
   c3.appendChild(el('h3','','Чемпион'));M.champ=el('div','champ');c3.appendChild(M.champ);M.places=el('p','note');c3.appendChild(M.places);
   
-  root.appendChild(el('p','note','Порядок игр в плей-офф: четвертьфинал 1, четвертьфинал 2, полуфинал 2, полуфинал 1, финал. Так игроки реже играют два матча подряд.'));
+  root.appendChild(el('p','note','Порядок игр в плей-офф: четвертьфиналы 1–4, полуфиналы 1–2, финал.'));
   ko.appendChild(c0);ko.appendChild(c1);ko.appendChild(c2);ko.appendChild(c3);root.appendChild(ko);
   M.out=el('div','grp');root.appendChild(M.out);
   var rb=el('button','','Перемешать группы заново');
@@ -362,10 +362,10 @@ function refresh(){
   var st={A:standings('A'),B:standings('B')};
   renderTable('A',st.A);renderTable('B',st.B);
   var ready=groupDone('A')&&groupDone('B');
-  var q1=ready?[st.A[1].i,st.B[2].i]:null,q2=ready?[st.B[1].i,st.A[2].i]:null;
-  setKo('qf1',q1);setKo('qf2',q2);
-  var wq1=q1?win('qf1',q1[0],q1[1]):null,wq2=q2?win('qf2',q2[0],q2[1]):null;
-  var s1=(ready&&wq2!==null)?[st.A[0].i,wq2]:null,s2=(ready&&wq1!==null)?[st.B[0].i,wq1]:null;
+  var q1=ready?[st.A[0].i,st.B[3].i]:null,q2=ready?[st.B[1].i,st.A[2].i]:null,q3=ready?[st.B[0].i,st.A[3].i]:null,q4=ready?[st.A[1].i,st.B[2].i]:null;
+  setKo('qf1',q1);setKo('qf2',q2);setKo('qf3',q3);setKo('qf4',q4);
+  var wq1=q1?win('qf1',q1[0],q1[1]):null,wq2=q2?win('qf2',q2[0],q2[1]):null,wq3=q3?win('qf3',q3[0],q3[1]):null,wq4=q4?win('qf4',q4[0],q4[1]):null;
+  var s1=(wq1!==null&&wq2!==null)?[wq1,wq2]:null,s2=(wq3!==null&&wq4!==null)?[wq3,wq4]:null;
   setKo('sf1',s1);setKo('sf2',s2);
   var w1=s1?win('sf1',s1[0],s1[1]):null,w2=s2?win('sf2',s2[0],s2[1]):null;
   var f=(w1!==null&&w2!==null)?[w1,w2]:null;
