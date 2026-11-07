@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Жеребьёвка команд — турнир по FIFA</title>
+
+<style>
+:root{--bg:#eaf0ea;--card:#fff;--tx:#12231a;--mu:#5a6b61;--bd:#cfdacf;--ac:#17783c;--ac-t:#fff;--lock:#e3f1e6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c130f;--card:#15201a;--tx:#e8f0ea;--mu:#8fa398;--bd:#26372d;--ac:#3fbf6a;--ac-t:#06210f;--lock:#173324;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0c130f;--card:#15201a;--tx:#e8f0ea;--mu:#8fa398;--bd:#26372d;--ac:#3fbf6a;--ac-t:#06210f;--lock:#173324;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font:700 28px/1.1 Oswald,"Arial Narrow",Impact,sans-serif;margin:0 0 4px;letter-spacing:.01em}
+.sub{color:var(--mu);margin:0 0 18px}
+.stage{background:#0d3b24;color:#f4e9b8;border-radius:14px;padding:20px 18px;border:2px solid #1d5c3b;
+background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 48px,transparent 48px 96px)}
+.who{font:500 18px Oswald,"Arial Narrow",sans-serif;color:#b9d6c3;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.dots{display:flex;gap:6px;align-items:center}
+.dot{width:12px;height:12px;border-radius:50%;border:2px solid #f2c230}
+.dot.on{background:#f2c230}
+.board{min-height:132px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:14px 4px}
+.team{font:700 clamp(30px,8vw,64px)/1.05 Oswald,"Arial Narrow",Impact,sans-serif;color:#f2c230;word-break:break-word}
+.team.roll{opacity:.8;filter:blur(.6px)}
+.team.idle{font-size:clamp(20px,5vw,30px);color:#b9d6c3;font-weight:500}
+.stars{font-size:22px;letter-spacing:3px;margin-top:6px;color:#f2c230;min-height:30px}
+.act{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+button{font:inherit;cursor:pointer;border-radius:10px;border:2px solid var(--bd);background:var(--card);color:var(--tx);padding:10px 16px;min-height:44px}
+button:focus-visible{outline:3px solid #f2c230;outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.go{background:#f2c230;color:#251c00;border-color:#f2c230;font-weight:700;font-size:18px;padding:10px 26px}
+.keep{background:transparent;color:#f4e9b8;border-color:#7fae92}
+h2{font:700 20px Oswald,"Arial Narrow",sans-serif;margin:26px 0 10px}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.p{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:2px solid var(--bd);background:var(--card)}
+.p.cur{border-color:var(--ac)}
+.p.done{background:var(--lock)}
+.p b{display:block}
+.p span{color:var(--mu);font-size:14px}
+.p .t{color:var(--tx);font-size:17px;font-weight:600}
+.tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.note{color:var(--mu);font-size:14px;margin-top:14px}
+.pick{display:none;margin-top:14px;text-align:center}.pick.on{display:block}.pick p{margin:0 0 10px;font:500 18px Oswald,"Arial Narrow",sans-serif;color:#b9d6c3}.pick .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.pick button{background:#f4e9b8;color:#251c00;border-color:#f4e9b8;font-weight:700}.pick small{display:block;font-weight:400;letter-spacing:2px}
+.groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin:14px 0}
+.grp h3,.col h3{font:700 18px Oswald,"Arial Narrow",sans-serif;margin:0 0 8px}
+.grp h4{margin:14px 0 8px;font-size:15px;color:var(--mu)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;background:var(--card);border-radius:10px;font-size:15px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center}
+th:nth-child(2),td:nth-child(2){text-align:left}
+tr.adv td{background:var(--lock)}
+td small,.l small{display:block;color:var(--mu);font-size:13px}
+.mw{margin-bottom:8px}
+.m{display:grid;grid-template-columns:1fr 52px 10px 52px 1fr;gap:6px;align-items:center;padding:8px 10px;border:2px solid var(--bd);border-radius:10px;background:var(--card)}
+.l{overflow-wrap:anywhere;line-height:1.2}.l.r{text-align:right}.sep{text-align:center;font-weight:700}
+input.sc{width:100%;min-height:44px;text-align:center;font:inherit;border:2px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)}
+input.sc:focus-visible,select:focus-visible{outline:3px solid var(--ac);outline-offset:1px}
+input.sc:disabled{opacity:.4}
+.pen{margin-top:6px;font-size:14px}.pen select{font:inherit;padding:6px;border-radius:8px;border:2px solid var(--bd);background:var(--card);color:var(--tx)}
+.ko{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;margin:20px 0}
+
+.card{margin-bottom:12px}.card>small{display:block;color:var(--mu);margin-bottom:4px}
+.champ{border-radius:14px;padding:20px 12px;text-align:center;background:#0d3b24;color:#f2c230;font:700 24px/1.2 Oswald,"Arial Narrow",sans-serif;min-height:96px}
+.champ small{display:block;color:#b9d6c3;font:400 14px system-ui,sans-serif;margin-top:4px}
+@media (prefers-reduced-motion:reduce){.team.roll{filter:none}}
+body{font-family:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background-image:repeating-linear-gradient(90deg,transparent 0 90px,rgba(23,120,60,.05) 90px 180px)}
+h1{font-size:clamp(34px,8vw,54px);line-height:1;margin:6px 0 10px}
+.sub{font-size:17px;max-width:48ch}
+h2{display:flex;align-items:center;gap:10px;font-size:24px}
+h2::before{content:'';width:10px;height:24px;border-radius:2px;background:#f2c230}
+.stage{position:relative;overflow:hidden;border:0;border-radius:18px;padding:28px 20px 22px;background:repeating-linear-gradient(90deg,#126236 0 64px,#0f5430 64px 128px);box-shadow:0 0 0 3px #0a3a21,6px 6px 0 3px #0a3a21}
+.stage>*{position:relative;z-index:1}
+.stage::before{content:'';position:absolute;inset:10px;border:2px solid rgba(255,255,255,.3);border-radius:10px}
+.stage::after{content:'';position:absolute;left:50%;top:50%;width:min(62vw,270px);aspect-ratio:1;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.2);border-radius:50%}
+.who span:first-child{font-size:clamp(22px,5vw,30px);color:#fff}
+.team{color:#ffe066;text-shadow:0 0 22px rgba(255,224,102,.35),0 3px 0 rgba(0,0,0,.35)}
+.stars{color:#ffd23f;text-shadow:0 0 10px rgba(255,210,63,.5)}
+.go{border-radius:999px;box-shadow:0 4px 0 #a98100}
+.go:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 #a98100}
+.go::before{content:'⚽ '}
+.keep{border-radius:999px}
+@media (prefers-reduced-motion:no-preference){@keyframes jit{from{transform:translateY(-4px)}to{transform:translateY(4px)}}.team.roll{animation:jit .09s linear infinite alternate}}
+.p{position:relative;padding:12px 14px 12px 66px;border-radius:14px;box-shadow:3px 3px 0 var(--bd);transition:transform .12s}
+.p:hover:not(:disabled){transform:translate(-1px,-1px)}
+.p.cur{border-color:var(--ac);box-shadow:3px 3px 0 var(--ac)}
+.p i{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font:700 16px Oswald,sans-serif;font-style:normal;color:#fff;box-shadow:inset 0 0 0 3px rgba(255,255,255,.35)}
+.p.done::after{content:'✓';position:absolute;right:12px;top:8px;color:var(--ac);font-weight:700}
+.grp h3,.col h3{display:inline-block;padding-bottom:4px;margin-bottom:12px;border-bottom:3px solid #f2c230;font-size:20px}
+.tw{border-radius:12px}
+table{border-collapse:separate;border-spacing:0;overflow:hidden;border:2px solid var(--bd);border-radius:12px}
+th{background:#0d3b24;color:#cfe5d6;font-weight:500;font-size:13px;border:0}
+tbody tr:last-child td{border-bottom:0}
+tr.adv td:first-child{box-shadow:inset 4px 0 0 var(--ac);font-weight:700}
+.m{border-radius:12px;box-shadow:3px 3px 0 var(--bd)}
+input.sc{font:700 22px Oswald,sans-serif;-moz-appearance:textfield}
+input.sc::-webkit-inner-spin-button,input.sc::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.champ{font-size:26px;border:3px solid #f2c230;box-shadow:0 0 0 5px rgba(242,194,48,.2);padding:26px 12px;background:repeating-linear-gradient(90deg,#126236 0 40px,#0f5430 40px 80px)}
+@media (prefers-reduced-motion:no-preference){@keyframes pop{0%{transform:scale(.8);opacity:.3}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}.champ.on{animation:pop .7s cubic-bezier(.2,1.2,.4,1)}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Жеребьёвка команд <span aria-hidden="true">⚽</span></h1>
+  <noscript><p class="note"><b>Скрипты отключены.</b> Эту страницу нужно открыть в браузере (Safari или Chrome) по обычной ссылке, а не в просмотрщике файлов Telegram.</p></noscript>
+  <p class="sub">Турнир по FIFA: у каждого игрока три прокрутки, а потом он оставляет лучшую из выпавших команд.</p>
+
+  <section class="stage" aria-live="polite">
+    <div class="who"><span id="who"></span><span class="dots" id="dots" aria-label="Использовано прокруток"></span></div>
+    <div class="board"><div class="team idle" id="team"></div><div class="stars" id="stars"></div></div>
+    <div class="act">
+      <button class="go" id="spin"></button>
+      <button class="keep" id="keep">Оставить эту команду</button>
+    </div>
+    <div class="pick" id="pick"></div>
+  </section>
+
+  <h2>Игроки и команды</h2>
+  <div class="list" id="list"></div>
+
+  <section id="tour"><h2>Турнир</h2><div id="tbody"></div></section>
+
+  <div class="tools">
+    <button id="copy">Скопировать итог</button>
+    <button id="reset">Начать заново</button>
+  </div>
+  <p class="note" id="msg"></p>
+  <p class="note">Уровень команд указан примерно, по общему классу клуба. Команда, которую один игрок оставил себе, другим не выпадет.</p>
+</main>
+
+<script>
+var TEAMS=[
+["Реал Мадрид",5],["Манчестер Сити",5],["Барселона",5],["Бавария",5],["ПСЖ",5],["Ливерпуль",5],["Арсенал",5],["Интер",5],
+["Манчестер Юнайтед",4.5],["Челси",4.5],["Тоттенхэм",4.5],["Ньюкасл",4.5],["Атлетико Мадрид",4.5],["Милан",4.5],["Ювентус",4.5],["Наполи",4.5],["Байер Леверкузен",4.5],["Боруссия Дортмунд",4.5],["РБ Лейпциг",4.5],["Рома",4.5],["Лацио",4.5],["Аталанта",4.5],["Бенфика",4.5],["Порту",4.5],["Аякс",4.5],["Астон Вилла",4.5],
+["Севилья",4],["Вильярреал",4],["Реал Сосьедад",4],["Атлетик Бильбао",4],["Бетис",4],["Вест Хэм",4],["Брайтон",4],["Фиорентина",4],["Айнтрахт",4],["Штутгарт",4],["Лион",4],["Марсель",4],["Монако",4],["Лилль",4],["Спортинг",4],["Селтик",4],["ПСВ",4],["Фейеноорд",4],["Галатасарай",4],["Фенербахче",4],["Аль-Хиляль",4],["Аль-Наср",4]
+];
+var NAMES=["Инсаф","Инсаф Гарипов","Данил Акбиров","Данил Галиев","Расим","Рамзиль","Булат","Булат Гарифуллин","Адель"];
+var KEY="fifa-draw-v1", MAX=3, S=load(), busy=false, resetArmed=false;
+var $=function(i){return document.getElementById(i)};
+
+function load(){
+  try{var r=localStorage.getItem(KEY);if(r){var s=JSON.parse(r);if(s&&s.p&&s.p.length===NAMES.length){s.p.forEach(function(q){if(!q.h)q.h=q.team?[q.team]:[]});return s}}}catch(e){}
+  return {p:NAMES.map(function(n){return{n:n,spins:0,team:null,locked:false,h:[]}}),cur:0};
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function rnd(n){var a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}
+function stars(v){var s="★".repeat(Math.floor(v));return v%1?s+"½":s}
+function level(name){for(var i=0;i<TEAMS.length;i++)if(TEAMS[i][0]===name)return TEAMS[i][1];return 0}
+function cur(){return S.p[S.cur]}
+
+function render(){
+  var p=cur(), t=$("team");
+  $("who").textContent=p.n;
+  $("dots").innerHTML="";
+  for(var i=0;i<MAX;i++){var d=document.createElement("span");d.className="dot"+(i<p.spins?" on":"");$("dots").appendChild(d)}
+  t.className="team"+(p.team?"":" idle");
+  if(p.team){t.textContent=p.team;$("stars").textContent=stars(level(p.team))}
+  else{t.textContent="Нажми «Крутить»";$("stars").textContent=""}
+  var left=MAX-p.spins;
+  $("spin").textContent=p.spins===0?"Крутить":"Крутить ещё ("+left+")";
+  $("spin").disabled=busy||p.locked||left<=0;
+  var choosing=!p.locked&&p.spins>=MAX&&!busy;
+  $("keep").style.display=(p.team&&!p.locked&&!busy&&!choosing)?"":"none";
+  var pk=$("pick");pk.className="pick"+(choosing?" on":"");pk.innerHTML="";
+  if(choosing){
+    t.className="team idle";t.textContent="Выбери лучшую из трёх";$("stars").textContent="";
+    var pp=document.createElement("p");pp.textContent="Три попытки использованы. Какую команду оставить?";pk.appendChild(pp);
+    var row=document.createElement("div");row.className="row";
+    p.h.forEach(function(name){var b=document.createElement("button");b.textContent=name;var sm=document.createElement("small");sm.textContent=stars(level(name));b.appendChild(sm);b.onclick=function(){choose(name)};row.appendChild(b)});
+    pk.appendChild(row);
+  }
+  var all=S.p.every(function(q){return q.locked});
+  if(all){$("who").textContent="Все команды розданы";$("spin").disabled=true}
+  tourState(all);
+  var L=$("list");L.innerHTML="";
+  S.p.forEach(function(q,i){
+    var b=document.createElement("button");
+    b.className="p"+(i===S.cur?" cur":"")+(q.locked?" done":"");
+    b.disabled=busy;
+    var n=document.createElement("b");n.textContent=q.n;
+    var tm=document.createElement("span");tm.className=q.team?"t":"";
+    tm.textContent=q.team?(q.locked?q.team:q.h.join(", ")+" — выбор не сделан"):"Ещё без команды";
+    var sp=document.createElement("span");sp.textContent=q.team?"  "+stars(level(q.team))+" · прокруток: "+q.spins+" из "+MAX:"Прокруток: 0 из "+MAX;
+    var av=document.createElement("i");av.textContent=q.n.split(" ").map(function(w){return w[0]}).join("").slice(0,2);av.style.background="hsl("+(i*41%360)+" 52% 34%)";b.appendChild(av);b.appendChild(n);b.appendChild(tm);b.appendChild(document.createElement("br"));b.appendChild(sp);
+    b.onclick=function(){S.cur=i;save();render()};
+    L.appendChild(b);
+  });
+}
+
+function spin(){
+  var p=cur();
+  if(busy||p.locked||p.spins>=MAX)return;
+  var pool=TEAMS.filter(function(t){return !S.p.some(function(q){return q.h.indexOf(t[0])>-1})});
+  
+  var res=pool[rnd(pool.length)];
+  busy=true;render();
+  var t=$("team");t.className="team roll";$("stars").textContent="";
+  var iv=setInterval(function(){t.textContent=TEAMS[rnd(TEAMS.length)][0]},70);
+  var dur=matchMedia("(prefers-reduced-motion:reduce)").matches?300:1800;
+  setTimeout(function(){
+    clearInterval(iv);busy=false;
+    p.team=res[0];p.spins++;
+    p.h.push(res[0]);
+    save();render();
+    
+  },dur);
+}
+function next(){
+  for(var k=1;k<=S.p.length;k++){
+    var i=(S.cur+k)%S.p.length;
+    if(!S.p[i].locked){setTimeout(function(){S.cur=i;save();render()},1200);return}
+  }
+}
+function choose(name){var p=cur();p.team=name;p.h=[name];p.locked=true;save();render();next()}
+$("spin").onclick=spin;
+$("keep").onclick=function(){var p=cur();p.locked=true;p.h=[p.team];save();render();next()};
+$("copy").onclick=function(){
+  var txt=S.p.map(function(q){return q.n+" — "+(q.team||"без команды")}).join("\n");
+  var m=$("msg");
+  try{navigator.clipboard.writeText(txt).then(function(){m.textContent="Итог скопирован."},function(){m.textContent="Не удалось скопировать. Выдели список вручную."})}
+  catch(e){m.textContent="Не удалось скопировать. Выдели список вручную."}
+};
+var built=false,M={};
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return c==='&'?'&amp;':c==='<'?'&lt;':'&gt;'})}
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=x;return e}
+function lab(i){return '<b>'+esc(S.p[i].n)+'</b><small>'+esc(S.p[i].team||'')+'</small>'}
+function pairs(ids){var r=[];for(var i=0;i<ids.length;i++)for(var j=i+1;j<ids.length;j++)r.push([ids[i],ids[j]]);return r}
+function gkey(a,b){return 'g'+a+'-'+b}
+function inp(){var i=el('input','sc');i.type='number';i.min='0';i.step='1';i.inputMode='numeric';i.setAttribute('aria-label','Голы');return i}
+function tourState(all){
+  var b=$('tbody');
+  if(!all){built=false;b.innerHTML='';b.appendChild(el('p','note','Сетка откроется, когда все игроки выберут себе команды.'));return}
+  if(!built)buildT();
+}
+function split(){
+  var ids=S.p.map(function(_,i){return i});
+  for(var i=ids.length-1;i>0;i--){var j=rnd(i+1),x=ids[i];ids[i]=ids[j];ids[j]=x}
+  var num=function(a,b){return a-b};
+  S.t={A:ids.slice(0,5).sort(num),B:ids.slice(5).sort(num),res:{},pen:{},kp:{}};
+  save();buildT();
+}
+function mkMatch(key,ko){
+  var row=el('div','m'),o={};
+  o.l0=el('span','l r');o.l1=el('span','l');o.s0=inp();o.s1=inp();
+  row.appendChild(o.l0);row.appendChild(o.s0);row.appendChild(el('span','sep',':'));row.appendChild(o.s1);row.appendChild(o.l1);
+  var r=S.t.res[key];if(r){o.s0.value=r[0];o.s1.value=r[1]}
+  o.s0.oninput=o.s1.oninput=function(){onScore(key,o)};
+  o.box=el('div','mw');o.box.appendChild(row);
+  if(ko){
+    o.pen=el('div','pen');o.pen.hidden=true;
+    var lb=el('label','','Победитель по пенальти: ');o.sel=el('select');
+    o.sel.onchange=function(){if(+o.sel.value)S.t.pen[key]=+o.sel.value;else delete S.t.pen[key];save();refresh()};
+    lb.appendChild(o.sel);o.pen.appendChild(lb);o.box.appendChild(o.pen);
+  }
+  M[key]=o;return o;
+}
+function onScore(key,o){
+  var a=o.s0.value,b=o.s1.value;
+  if(a!==''&&b!==''&&+a>=0&&+b>=0)S.t.res[key]=[Math.floor(+a),Math.floor(+b)];else delete S.t.res[key];
+  save();refresh();
+}
+function buildT(){
+  var root=$('tbody');root.innerHTML='';M={};built=true;
+  root.appendChild(el('p','note','Формат: две группы (5 и 4 игрока), каждый играет с каждым по одному матчу. Победа даёт 3 очка, ничья 1. Трое лучших из каждой группы (подсвечены) выходят в плей-офф, остальные выбывают. Первые места групп сразу попадают в полуфинал, а 2 и 3 места играют четвертьфиналы крест-накрест. Победители полуфиналов играют финал. Места в группе считаются по очкам, затем по разнице мячей, затем по забитым.'));
+  if(!S.t){var b=el('button','go','Разделить на группы');b.onclick=split;root.appendChild(b);return}
+  var gw=el('div','groups');
+  ['A','B'].forEach(function(g){
+    var box=el('div','grp');box.appendChild(el('h3','','Группа '+g));
+    var tw=el('div','tw');tw.id='st'+g;box.appendChild(tw);
+    box.appendChild(el('h4','','Матчи'));
+    pairs(S.t[g]).forEach(function(p){var o=mkMatch(gkey(p[0],p[1]),false);o.l0.innerHTML=lab(p[0]);o.l1.innerHTML=lab(p[1]);box.appendChild(o.box)});
+    gw.appendChild(box);
+  });
+  root.appendChild(gw);
+  var ko=el('div','ko'),c0=el('div','col'),c1=el('div','col'),c2=el('div','col'),c3=el('div','col');
+  function card(c,k,t){var w=el('div','card');w.appendChild(el('small','',t));w.appendChild(mkMatch(k,true).box);c.appendChild(w)}
+  c0.appendChild(el('h3','','Четвертьфиналы'));card(c0,'qf1','2 место A и 3 место B');card(c0,'qf2','2 место B и 3 место A');
+  c1.appendChild(el('h3','','Полуфиналы'));
+  card(c1,'sf1','1 место A и победитель матча 2 B — 3 A');card(c1,'sf2','1 место B и победитель матча 2 A — 3 B');
+  c2.appendChild(el('h3','','Финал'));
+  var fw=el('div','card');fw.appendChild(mkMatch('f',true).box);c2.appendChild(fw);
+  c3.appendChild(el('h3','','Чемпион'));M.champ=el('div','champ');c3.appendChild(M.champ);M.places=el('p','note');c3.appendChild(M.places);
+  
+  ko.appendChild(c0);ko.appendChild(c1);ko.appendChild(c2);ko.appendChild(c3);root.appendChild(ko);
+  M.out=el('div','grp');root.appendChild(M.out);
+  var rb=el('button','','Перемешать группы заново');
+  rb.onclick=function(){
+    if(Object.keys(S.t.res).length&&!rb.a){rb.a=true;rb.textContent='Результаты сотрутся. Точно?';setTimeout(function(){rb.a=false;rb.textContent='Перемешать группы заново'},3000);return}
+    split();
+  };
+  var wrap=el('div','tools');wrap.appendChild(rb);root.appendChild(wrap);
+  refresh();
+}
+function standings(g){
+  var r={};S.t[g].forEach(function(i){r[i]={i:i,pl:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}});
+  pairs(S.t[g]).forEach(function(p){
+    var m=S.t.res[gkey(p[0],p[1])];if(!m)return;
+    var A=r[p[0]],B=r[p[1]];A.pl++;B.pl++;A.gf+=m[0];A.ga+=m[1];B.gf+=m[1];B.ga+=m[0];
+    if(m[0]>m[1]){A.w++;B.l++;A.pts+=3}else if(m[0]<m[1]){B.w++;A.l++;B.pts+=3}else{A.d++;B.d++;A.pts++;B.pts++}
+  });
+  var arr=Object.keys(r).map(function(k){return r[k]});
+  arr.sort(function(x,y){return y.pts-x.pts||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf||x.i-y.i});
+  return arr;
+}
+function groupDone(g){return pairs(S.t[g]).every(function(p){return !!S.t.res[gkey(p[0],p[1])]})}
+function win(k,a,b){
+  var m=S.t.res[k];if(!m)return null;
+  if(m[0]>m[1])return a;if(m[1]>m[0])return b;
+  var p=S.t.pen[k];return p===1?a:p===2?b:null;
+}
+function renderTable(g,arr){
+  var h='<table><thead><tr><th>#</th><th>Игрок</th><th>И</th><th>В</th><th>Н</th><th>П</th><th>Мячи</th><th>О</th><th>О/И</th></tr></thead><tbody>';
+  arr.forEach(function(r,k){h+='<tr'+(k<3?' class=adv':'')+'><td>'+(k+1)+'</td><td>'+lab(r.i)+'</td><td>'+r.pl+'</td><td>'+r.w+'</td><td>'+r.d+'</td><td>'+r.l+'</td><td>'+r.gf+':'+r.ga+'</td><td><b>'+r.pts+'</b></td><td>'+(r.pl?(r.pts/r.pl).toFixed(2):'0.00')+'</td></tr>'});
+  $('st'+g).innerHTML=h+'</tbody></table>';
+}
+function setKo(k,pp){
+  var o=M[k],id=pp?pp[0]+'-'+pp[1]:'';
+  if(S.t.kp[k]!==id){S.t.kp[k]=id;delete S.t.res[k];delete S.t.pen[k];o.s0.value='';o.s1.value='';save()}
+  var wait='<small>Ждём результатов</small>';
+  o.l0.innerHTML=pp?lab(pp[0]):wait;o.l1.innerHTML=pp?lab(pp[1]):wait;
+  o.s0.disabled=o.s1.disabled=!pp;
+  var r=S.t.res[k];
+  o.pen.hidden=!(pp&&r&&r[0]===r[1]);
+  if(pp){
+    o.sel.innerHTML='';
+    [['0','— выбери —'],['1',S.p[pp[0]].n],['2',S.p[pp[1]].n]].forEach(function(x){var op=el('option','',x[1]);op.value=x[0];o.sel.appendChild(op)});
+    o.sel.value=String(S.t.pen[k]||0);
+  }
+}
+function refresh(){
+  if(!S.t||!M.champ)return;
+  var st={A:standings('A'),B:standings('B')};
+  renderTable('A',st.A);renderTable('B',st.B);
+  var ready=groupDone('A')&&groupDone('B');
+  var q1=ready?[st.A[1].i,st.B[2].i]:null,q2=ready?[st.B[1].i,st.A[2].i]:null;
+  setKo('qf1',q1);setKo('qf2',q2);
+  var wq1=q1?win('qf1',q1[0],q1[1]):null,wq2=q2?win('qf2',q2[0],q2[1]):null;
+  var s1=(ready&&wq2!==null)?[st.A[0].i,wq2]:null,s2=(ready&&wq1!==null)?[st.B[0].i,wq1]:null;
+  setKo('sf1',s1);setKo('sf2',s2);
+  var w1=s1?win('sf1',s1[0],s1[1]):null,w2=s2?win('sf2',s2[0],s2[1]):null;
+  var f=(w1!==null&&w2!==null)?[w1,w2]:null;
+  setKo('f',f);
+  
+  
+  
+  var c=f?win('f',f[0],f[1]):null;
+  var pl='';
+  if(c!==null)pl+='2 место: '+esc(S.p[c===f[0]?f[1]:f[0]].n);
+  
+  M.places.innerHTML=pl;
+  var oh='';
+  if(ready){
+    var out=st.A.slice(3).concat(st.B.slice(3));
+    out.sort(function(x,y){return y.pts/y.pl-x.pts/x.pl||(y.gf-y.ga)/y.pl-(x.gf-x.ga)/x.pl||y.gf/y.pl-x.gf/x.pl||x.i-y.i});
+    oh='<h3>Выбывшие в группах: места 7–9</h3><p class=note>Считаются по среднему числу очков за матч (в группе из 5 игроков сыграно на матч больше), затем по средней разнице мячей. Места 3–6 делят проигравшие в плей-офф.</p><div class=tw><table><thead><tr><th>Место</th><th>Игрок</th><th>И</th><th>О</th><th>О/И</th><th>Мячи</th></tr></thead><tbody>';
+    out.forEach(function(r,k){oh+='<tr><td>'+(7+k)+'</td><td>'+lab(r.i)+'</td><td>'+r.pl+'</td><td>'+r.pts+'</td><td><b>'+(r.pts/r.pl).toFixed(2)+'</b></td><td>'+r.gf+':'+r.ga+'</td></tr>'});
+    oh+='</tbody></table></div>';
+  }
+  M.out.innerHTML=oh;
+  M.champ.className='champ'+(c!==null?' on':'');M.champ.innerHTML=c!==null?'🏆<br>'+lab(c):'<small>Определится после финала</small>';
+}
+$("reset").onclick=function(){
+  var b=$("reset");
+  if(!resetArmed){resetArmed=true;b.textContent="Точно сбросить всё?";setTimeout(function(){resetArmed=false;b.textContent="Начать заново"},3000);return}
+  resetArmed=false;b.textContent="Начать заново";
+  S={p:NAMES.map(function(n){return{n:n,spins:0,team:null,locked:false,h:[]}}),cur:0};save();$("msg").textContent="";render();
+};
+render();
+</script>
+</body>
+</html>
