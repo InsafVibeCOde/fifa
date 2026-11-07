@@ -99,6 +99,9 @@ input.sc{font:700 22px Oswald,sans-serif;-moz-appearance:textfield}
 input.sc::-webkit-inner-spin-button,input.sc::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .champ{font-size:26px;border:3px solid #f2c230;box-shadow:0 0 0 5px rgba(242,194,48,.2);padding:26px 12px;background:repeating-linear-gradient(90deg,#126236 0 40px,#0f5430 40px 80px)}
 @media (prefers-reduced-motion:no-preference){@keyframes pop{0%{transform:scale(.8);opacity:.3}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}.champ.on{animation:pop .7s cubic-bezier(.2,1.2,.4,1)}}
+.sched{margin:18px 0 8px}.sched h3{display:inline-block;padding-bottom:4px;margin:0 0 4px;border-bottom:3px solid #f2c230;font:700 20px Oswald,'Arial Narrow',sans-serif}
+.slist{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:6px 18px}
+.mrow .num{display:block;font-size:13px;color:var(--mu);margin:0 0 3px 2px}
 </style>
 </head>
 <body>
@@ -232,7 +235,7 @@ function inp(){var i=el('input','sc');i.type='number';i.min='0';i.step='1';i.inp
 function tourState(all){
   var b=$('tbody');
   if(!all){built=false;b.innerHTML='';b.appendChild(el('p','note','Сетка откроется, когда все игроки выберут себе команды.'));return}
-  if(!built)buildT();
+  if(!built){if(!S.t)split();else buildT()}
 }
 function split(){
   var ids=S.p.map(function(_,i){return i});
@@ -269,11 +272,19 @@ function buildT(){
   ['A','B'].forEach(function(g){
     var box=el('div','grp');box.appendChild(el('h3','','Группа '+g));
     var tw=el('div','tw');tw.id='st'+g;box.appendChild(tw);
-    box.appendChild(el('h4','','Матчи'));
-    pairs(S.t[g]).forEach(function(p){var o=mkMatch(gkey(p[0],p[1]),false);o.l0.innerHTML=lab(p[0]);o.l1.innerHTML=lab(p[1]);box.appendChild(o.box)});
+    
+    
     gw.appendChild(box);
   });
   root.appendChild(gw);
+  var sc=el('div','sched'),sl=el('div','slist');
+  sc.appendChild(el('h3','','Расписание групповых матчей'));
+  sc.appendChild(el('p','note','Играем по очереди, сверху вниз. Матчи расставлены так, чтобы никто не играл два матча подряд: между его играми всегда есть хотя бы один чужой матч.'));
+  schedule().forEach(function(m,k){
+    var o=mkMatch(gkey(m.a,m.b),false);o.l0.innerHTML=lab(m.a);o.l1.innerHTML=lab(m.b);
+    var w=el('div','mrow');w.appendChild(el('span','num',(k+1)+'. Группа '+m.g));w.appendChild(o.box);sl.appendChild(w);
+  });
+  sc.appendChild(sl);root.insertBefore(sc,gw);
   var ko=el('div','ko'),c0=el('div','col'),c1=el('div','col'),c2=el('div','col'),c3=el('div','col');
   function card(c,k,t){var w=el('div','card');w.appendChild(el('small','',t));w.appendChild(mkMatch(k,true).box);c.appendChild(w)}
   c0.appendChild(el('h3','','Четвертьфиналы'));card(c0,'qf1','2 место A и 3 место B');card(c0,'qf2','2 место B и 3 место A');
@@ -283,6 +294,7 @@ function buildT(){
   var fw=el('div','card');fw.appendChild(mkMatch('f',true).box);c2.appendChild(fw);
   c3.appendChild(el('h3','','Чемпион'));M.champ=el('div','champ');c3.appendChild(M.champ);M.places=el('p','note');c3.appendChild(M.places);
   
+  root.appendChild(el('p','note','Порядок игр в плей-офф: четвертьфинал 1, четвертьфинал 2, полуфинал 2, полуфинал 1, финал. Так игроки реже играют два матча подряд.'));
   ko.appendChild(c0);ko.appendChild(c1);ko.appendChild(c2);ko.appendChild(c3);root.appendChild(ko);
   M.out=el('div','grp');root.appendChild(M.out);
   var rb=el('button','','Перемешать группы заново');
@@ -292,6 +304,22 @@ function buildT(){
   };
   var wrap=el('div','tools');wrap.appendChild(rb);root.appendChild(wrap);
   refresh();
+}
+function schedule(){
+  var rem=[];['A','B'].forEach(function(g){pairs(S.t[g]).forEach(function(p){rem.push({a:p[0],b:p[1],g:g})})});
+  var cnt={},last={},out=[],step=0;
+  rem.forEach(function(m){cnt[m.a]=(cnt[m.a]||0)+1;cnt[m.b]=(cnt[m.b]||0)+1});
+  function rest(i){return last[i]===undefined?99:step-last[i]}
+  while(rem.length){
+    var bi=0,bs=null;
+    rem.forEach(function(m,i){
+      var s=[Math.min(rest(m.a),rest(m.b)),cnt[m.a]+cnt[m.b]];
+      if(!bs||s[0]>bs[0]||(s[0]===bs[0]&&s[1]>bs[1])){bs=s;bi=i}
+    });
+    var m=rem.splice(bi,1)[0];
+    last[m.a]=step;last[m.b]=step;cnt[m.a]--;cnt[m.b]--;out.push(m);step++;
+  }
+  return out;
 }
 function standings(g){
   var r={};S.t[g].forEach(function(i){r[i]={i:i,pl:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}});
